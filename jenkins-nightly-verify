@@ -1,0 +1,82 @@
+pipeline {
+     agent { label 'master' }
+     stages {
+          stage ('Fetch-SONA') {
+              steps {
+                  cleanWs()
+                  sh 'repo init -u https://github.com/sonaproject/onos-sona-repo.git'
+                  sh 'repo sync'
+              }
+          }
+  
+          stage ('Build-SONA') {
+              steps {
+                sh 'export ONOS_ROOT=${WORKSPACE} && ./build.sh'
+              }
+          }
+          
+          stage ('Test-SONA') {
+              steps {
+                sh 'export ONOS_ROOT=${WORKSPACE} && ./verify.sh'
+              }
+          }
+          
+          stage ('Deploy-ONOS') {
+              steps {
+                  sh 'ssh -o StrictHostKeyChecking=no centos@${ONOS_IP} "sudo docker pull opensona/docker-sona"'
+                  sh 'ssh -o StrictHostKeyChecking=no centos@${ONOS_IP} "sudo docker stop onos || true"'
+                  sh 'ssh -o StrictHostKeyChecking=no centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos opensona/docker-sona"'
+                  retry(10) {
+                      sleep 30
+                      sh 'curl --silent --show-error --fail --user onos:rocks -X POST -H \"Content-Type: application/json\" http://${ONOS_IP}:8181/onos/openstacknode/configure -d @/var/lib/onos/network-cfg.json'
+                  }
+              }
+          }
+          
+          stage ('Deploy-SONA') {
+              steps {
+                sh '${WORKSPACE}/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! sona-out/openstacknode.oar'
+                sh '${WORKSPACE}/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! sona-out/openstacknetworking.oar'
+                sh '${WORKSPACE}/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! sona-out/openstacknetworkingui.oar'
+              }
+          }
+          
+          stage ('Prepare-Tempest') {
+              steps {
+                sh 'git clone https://github.com/sonaproject/tempest-sona-conf.git'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo rm -rf /var/lib/rally_container || true"'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo mkdir -p /var/lib/rally_container || true"'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo chown 65500 /var/lib/rally_container"'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo rm -rf /home/centos/admin-openrc.sh /home/centos/sona-skip-list.yaml /home/centos/sona-tempest.conf || true"'
+                sh 'scp -o StrictHostKeyChecking=no tempest-sona-conf/admin-openrc.sh centos@${TEMPEST_IP}:/home/centos'
+                sh 'scp -o StrictHostKeyChecking=no tempest-sona-conf/sona-skip-list.yaml centos@${TEMPEST_IP}:/home/centos'
+                sh 'scp -o StrictHostKeyChecking=no tempest-sona-conf/sona-tempest.conf centos@${TEMPEST_IP}:/home/centos'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo cp /home/centos/admin-openrc.sh /var/lib/rally_container"'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo cp /home/centos/sona-skip-list.yaml /var/lib/rally_container"'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo cp /home/centos/sona-tempest.conf /var/lib/rally_container"'
+        
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo docker run -d -i -v /var/lib/rally_container:/home/rally opensona/rally:stable_0.9" > docker_id_${BUILD_NUMBER}'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'rally-manage db recreate\'"'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally deployment create --fromenv --name sona-test\'"'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify create-verifier --type tempest --name tempest-verifier --source https://github.com/sonaproject/tempest-obsolete.git\'"'
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify configure-verifier --extend sona-tempest.conf\'"'
+            }
+          }
+          
+          stage ('Run-Tempest') {
+              steps {
+                sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --pattern network --skip-list sona-skip-list.yaml --detail\'" | tee tempest_out.log'
+                sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
+              }
+          }
+     }
+     post {
+         always {
+             sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo docker stop `cat docker_id_${BUILD_NUMBER}`"'
+             sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo rm -rf /home/centos/admin-openrc.sh /home/centos/sona-skip-list.yaml /home/centos/sona-tempest.conf"'
+             sh 'ssh -o StrictHostKeyChecking=no centos@${TEMPEST_IP} "sudo rm -rf /var/lib/rally_container"'
+             sh 'ssh -o StrictHostKeyChecking=no centos@${ONOS_IP} "sudo docker stop onos"'
+             cleanWs()
+         }
+     }
+}
