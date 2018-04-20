@@ -8,7 +8,20 @@ pipeline {
                   sh 'repo sync'
               }
           }
-  
+          
+          stage ('Pull-Review-Repo') {
+              when {
+                  expression { 
+                      return params.GERRIT_BUILD
+                  }
+              }
+              steps {
+                  sh 'rm -rf 02-master-onos'
+                  sh 'git clone https://gerrit.onosproject.org/onos 02-master-onos'
+                  sh "cd 02-master-onos && git review -d ${REVIEW_NO} && git log -5"
+              }
+          }
+          
           stage ('Build-SONA') {
               steps {
                 sh 'export ONOS_ROOT=${WORKSPACE} && ./build.sh'
