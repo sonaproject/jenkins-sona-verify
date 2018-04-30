@@ -38,9 +38,9 @@ pipeline {
 
           stage ('Deploy-ONOS') {
               steps {
-                  sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/docker-sona"'
+                  sh 'ssh centos@${ONOS_IP} "sudo docker pull gunine/onos-sona-docker"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker stop onos || true"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos opensona/docker-sona"'
+                  sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos gunine/onos-sona-docker"'
                   retry(10) {
                       sleep 30
                       sh 'curl --silent --show-error --fail --user onos:rocks -X POST -H \"Content-Type: application/json\" http://${ONOS_IP}:8181/onos/openstacknode/configure -d @/var/lib/onos/network-cfg.json'
