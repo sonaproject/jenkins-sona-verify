@@ -1,7 +1,7 @@
 pipeline {
      agent { label 'master' }
      environment {
-        ONOS_VERSION = 'UNDEFINED'
+        ONOS_VERSION = '1.13.0'
      }
      stages {
          stage ('Fetch-SONA') {
