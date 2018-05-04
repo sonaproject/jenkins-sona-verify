@@ -1,5 +1,8 @@
 pipeline {
      agent { label 'master' }
+     environment {
+        ONOS_VERSION = 'UNDEFINED'
+     }
      stages {
          stage ('Fetch-SONA') {
           steps {
@@ -10,7 +13,8 @@ pipeline {
                   sh 'ssh centos@${ONOS_IP} "sudo docker rm onos-build || true"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --name onos-build gunine/onos-sona-repo-build"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p /src/\'"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git\'"'
+
+                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git -b refs/tags/\"${ONOS_VERSION}\"\'"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo sync\'"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'echo \"export ONOS_ROOT=/src\" > ~/.bash_profile\'"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'. ~/.bash_profile\'"'
@@ -30,6 +34,12 @@ pipeline {
               }
           }
 
+          stage ('Patch-ONOS') {
+              steps {
+                sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./patch.sh \"${ONOS_VERSION}\" \'"'
+              }
+          }
+
           stage ('Build-SONA') {
               steps {
                 sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./build.sh\'"'
@@ -44,10 +54,10 @@ pipeline {
 
          stage ('Deploy-ONOS') {
              steps {
-                 sh 'ssh centos@${ONOS_IP} "sudo docker pull gunine/onos-sona-docker"'
+                 sh 'ssh centos@${ONOS_IP} "sudo docker pull gunine/onos-sona-docker:\"${ONOS_VERSION}\""'
                  sh 'ssh centos@${ONOS_IP} "sudo docker stop onos || true"'
                  sh 'ssh centos@${ONOS_IP} "sudo docker rm onos || true"'
-                 sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos gunine/onos-sona-docker"'
+                 sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos gunine/onos-sona-docker:\"${ONOS_VERSION}\""'
                  retry(10) {
                      sleep 30
                      sh 'curl --silent --show-error --fail --user onos:rocks -X GET --header \"Accept: application/json\" http://${ONOS_IP}:8181/onos/v1/mastership'
