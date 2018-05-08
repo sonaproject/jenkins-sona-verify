@@ -14,7 +14,7 @@ pipeline {
                   sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --name onos-build opensona/onos-sona-repo-build"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p /src/\'"'
 
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git -b refs/tags/\"${ONOS_VERSION}\"\'"'
+                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git -b \"${ONOS_VERSION}\"\'"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo sync\'"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'echo \"export ONOS_ROOT=/src\" > ~/.bash_profile\'"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'. ~/.bash_profile\'"'
