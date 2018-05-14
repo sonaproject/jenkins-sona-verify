@@ -100,6 +100,17 @@ pipeline {
                sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
              }
          }
+
+         stage ('Deliver-ONOS-SONA') {
+             when {
+                  expression {
+                      return params.DOCKER_DELIVERY
+                  }
+              }
+              steps {
+                  sh 'test $(cat tempest_out.log | grep -c " Failures: 0") -eq 1 && curl -H "Content-Type: application/json" --data \'{"source_type": "Branch", "source_name": "\'${ONOS_VERSION}\'"}\' -X POST ${TRIGGER_URL}'
+              }
+         }
      }
      post {
          always {
