@@ -1,7 +1,8 @@
 pipeline {
      agent { label 'master' }
      environment {
-        ONOS_VERSION = '1.13.1'
+        ONOS_VERSION = 'master'
+        DOCKER_TAG = 'latest'
      }
      stages {
          stage ('Fetch-SONA') {
@@ -54,10 +55,10 @@ pipeline {
 
          stage ('Deploy-ONOS') {
              steps {
-                 sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-docker:\"${ONOS_VERSION}\""'
+                 sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-docker:\"${DOCKER_TAG}\""'
                  sh 'ssh centos@${ONOS_IP} "sudo docker stop onos || true"'
                  sh 'ssh centos@${ONOS_IP} "sudo docker rm onos || true"'
-                 sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos opensona/onos-sona-docker:\"${ONOS_VERSION}\""'
+                 sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos opensona/onos-sona-docker:\"${DOCKER_TAG}\""'
                  retry(10) {
                      sleep 30
                      sh 'curl --silent --show-error --fail --user onos:rocks -X GET --header \"Accept: application/json\" http://${ONOS_IP}:8181/onos/v1/mastership'
