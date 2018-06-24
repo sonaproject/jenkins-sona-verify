@@ -1,10 +1,5 @@
 pipeline {
      agent { label 'master' }
-     environment {
-        ONOS_VERSION = 'master'
-        LIGHT_PREFIX = 'light'
-        DOCKER_TAG = 'latest'
-     }
      stages {
          stage ('Fetch-SONA') {
           steps {
@@ -72,9 +67,6 @@ pipeline {
                sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknode.oar\'"'
                sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
                sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworkingui.oar\'"'
-               sh 'curl --silent --show-error --fail --user onos:rocks -X POST -H \"Content-Type: application/json\" http://${ONOS_IP}:8181/onos/openstacknode/configure -d @/var/jenkins_home/network-cfg.json'
-               sh 'ssh centos@${ONOS_IP} "sudo docker stop onos-build || true"'
-               sh 'ssh centos@${ONOS_IP} "sudo docker rm onos-build || true"'
              }
          }
          stage ('Prepare-Tempest') {
@@ -88,17 +80,29 @@ pipeline {
                sh 'scp tempest-sona-conf/* centos@${TEMPEST_IP}:/home/centos/tempest-sona-conf'
                sh 'ssh centos@${TEMPEST_IP} "sudo cp /home/centos/tempest-sona-conf/* /var/lib/rally_container"'
 
-               sh 'ssh centos@${TEMPEST_IP} "sudo docker run -d -i -v /var/lib/rally_container:/home/rally opensona/rally:stable_0.9" > docker_id_${BUILD_NUMBER}'
-               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'rally-manage db recreate\'"'
-               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally deployment create --fromenv --name sona-test\'"'
-               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify create-verifier --type tempest --name tempest-verifier --source https://github.com/sonaproject/tempest-obsolete.git\'"'
-               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify configure-verifier --extend sona-tempest.conf\'"'
+               sh 'ssh centos@${TEMPEST_IP} "cd ~/sona-setup-tempest && ./createExternalRouter.sh"'
+               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'rally-manage db recreate\'"'
+               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally deployment create --fromenv --name sona-test\'"'
+               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify create-verifier --type tempest --name tempest-verifier --source https://github.com/sonaproject/tempest-obsolete.git\'"'
+               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify configure-verifier --extend sona-tempest.conf\'"'
            }
+         }
+
+         stage ('Configure-SONA') {
+             steps {
+               sh 'curl --silent --show-error --fail --user onos:rocks -X POST -H \"Content-Type: application/json\" http://${ONOS_IP}:8181/onos/openstacknode/configure -d @/var/jenkins_home/network-cfg.json'
+               sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/sync/states'
+               sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/sync/rules'
+               sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/sync/rules'
+
+               sh 'ssh centos@${ONOS_IP} "sudo docker stop onos-build || true"'
+               sh 'ssh centos@${ONOS_IP} "sudo docker rm onos-build || true"'
+             }
          }
 
          stage ('Run-Tempest') {
              steps {
-               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i `cat docker_id_${BUILD_NUMBER}` /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --pattern network --skip-list sona-skip-list.yaml --detail\'" | tee tempest_out.log'
+               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --pattern network --skip-list sona-skip-list.yaml --detail --concurrency 1\'" | tee tempest_out.log'
                sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
              }
          }
@@ -120,7 +124,7 @@ pipeline {
      }
      post {
          always {
-             sh 'ssh centos@${TEMPEST_IP} "sudo docker stop `cat docker_id_${BUILD_NUMBER}`"'
+             sh 'ssh centos@${TEMPEST_IP} "sudo docker stop router"'
              sh 'ssh centos@${TEMPEST_IP} "sudo rm -rf /home/centos/tempest-sona-conf"'
              sh 'ssh centos@${TEMPEST_IP} "sudo rm -rf /var/lib/rally_container"'
              sh 'ssh centos@${ONOS_IP} "sudo docker stop onos"'
