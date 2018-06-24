@@ -118,7 +118,7 @@ pipeline {
 
                   sleep 60
 
-                  sh 'test $(cat tempest_out.log | grep -c " Failures: 0") -eq 1 && curl -H "Content-Type: application/json" --data \'{"source_type": "Branch", "source_name": "\'${LIGHT_PREFIX}\'"}\' -X POST ${TRIGGER_URL}'
+                  sh 'test $(cat tempest_out.log | grep -c " Failures: 0") -eq 1 && curl -H "Content-Type: application/json" --data \'{"source_type": "Branch", "source_name": "\'${LIGHT_VERSION}\'"}\' -X POST ${TRIGGER_URL}'
               }
          }
      }
