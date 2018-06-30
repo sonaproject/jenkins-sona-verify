@@ -5,7 +5,7 @@ pipeline {
           steps {
                   notifyBuild('STARTED', params.NOTIFY_BUILD)
                   cleanWs()
-                  sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-repo-build"'
+                  sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-repo-build || true"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker stop onos-build || true"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker rm onos-build || true"'
                   sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --name onos-build opensona/onos-sona-repo-build"'
@@ -51,7 +51,7 @@ pipeline {
 
          stage ('Deploy-ONOS') {
              steps {
-                 sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-docker:\"${DOCKER_TAG}\""'
+                 sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-docker:\"${DOCKER_TAG}\" || true"'
                  sh 'ssh centos@${ONOS_IP} "sudo docker stop onos || true"'
                  sh 'ssh centos@${ONOS_IP} "sudo docker rm onos || true"'
                  sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos opensona/onos-sona-docker:\"${DOCKER_TAG}\""'
