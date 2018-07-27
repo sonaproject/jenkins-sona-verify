@@ -93,18 +93,36 @@ pipeline {
                sh 'curl --silent --show-error --fail --user onos:rocks -X POST -H \"Content-Type: application/json\" http://${ONOS_IP}:8181/onos/openstacknode/configure -d @/var/jenkins_home/network-cfg.json'
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/sync/states'
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/sync/rules'
-               sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/broadcast'
 
                sh 'ssh centos@${ONOS_IP} "sudo docker stop onos-build || true"'
                sh 'ssh centos@${ONOS_IP} "sudo docker rm onos-build || true"'
              }
          }
 
-         stage ('Run-Tempest') {
+         stage ('Verify-Broadcast-Mode') {
+             when {
+                 expression {
+                     return params.ARP_MODE != "proxy"
+                 }
+             }
              steps {
+               sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/broadcast'
                sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --pattern network --skip-list sona-skip-list.yaml --detail --concurrency 1\'" | tee tempest_out.log'
                sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
              }
+         }
+
+         stage ('Verify-Proxy-Mode') {
+              when {
+                 expression {
+                      return params.ARP_MODE != "broadcast"
+                 }
+              }
+              steps {
+                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/proxy'
+                sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --pattern network --skip-list sona-skip-list.yaml --detail --concurrency 1\'" | tee tempest_out.log'
+                sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
+              }
          }
 
          stage ('Deliver-ONOS-SONA') {
