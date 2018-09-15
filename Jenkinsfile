@@ -51,10 +51,10 @@ pipeline {
 
          stage ('Deploy-ONOS') {
              steps {
-                 sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-docker:\"${DOCKER_TAG}\" || true"'
+                 sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-nightly-docker:stable || true"'
                  sh 'ssh centos@${ONOS_IP} "sudo docker stop onos || true"'
                  sh 'ssh centos@${ONOS_IP} "sudo docker rm onos || true"'
-                 sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos opensona/onos-sona-docker:\"${DOCKER_TAG}\""'
+                 sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos opensona/onos-sona-nightly-docker:stable"'
                  retry(10) {
                      sleep 30
                      sh 'curl --silent --show-error --fail --user onos:rocks -X GET --header \"Accept: application/json\" http://${ONOS_IP}:8181/onos/v1/mastership'
