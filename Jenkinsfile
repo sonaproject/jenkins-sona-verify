@@ -82,7 +82,7 @@ pipeline {
                sh 'ssh centos@${TEMPEST_IP} "sudo cp /home/centos/tempest-sona-conf/* /var/lib/rally_container"'
 
                sh 'ssh centos@${TEMPEST_IP} "cd ~/sona-setup-tempest && ./createExternalRouter.sh"'
-               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'rally-manage db recreate\'"'
+               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'rally db recreate\'"'
                sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally deployment create --fromenv --name sona-test\'"'
                sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify create-verifier --type tempest --name tempest-verifier --source https://github.com/sonaproject/tempest.git --version ${OPENSTACK_VERSION}\'"'
                sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify configure-verifier --extend sona-tempest.conf\'"'
