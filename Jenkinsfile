@@ -5,16 +5,16 @@ pipeline {
           steps {
                   notifyBuild('STARTED', params.NOTIFY_BUILD)
                   cleanWs()
-                  sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-repo-build || true"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker stop onos-build || true"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker rm onos-build || true"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --name onos-build opensona/onos-sona-repo-build"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p /src/\'"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker pull opensona/onos-sona-repo-build || true"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker stop onos-build || true"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker rm onos-build || true"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build -v root_home:/root opensona/onos-sona-repo-build"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p /src/\'"'
 
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git -b \"${ONOS_VERSION}\"\'"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo sync\'"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'echo \"export ONOS_ROOT=/src\" > ~/.bash_profile\'"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'. ~/.bash_profile\'"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git -b \"${ONOS_VERSION}\"\'"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo sync\'"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'echo \"export ONOS_ROOT=/src\" > ~/.bash_profile\'"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'. ~/.bash_profile\'"'
               }
           }
 
@@ -25,36 +25,36 @@ pipeline {
                   }
               }
               steps {
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && rm -rf 02-master-onos\'"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && git clone https://gerrit.onosproject.org/onos 02-master-onos\'"'
-                  sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src/02-master-onos && git review -d \'${REVIEW_NO}\' && git log -5\'"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && rm -rf 02-master-onos\'"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && git clone https://gerrit.onosproject.org/onos 02-master-onos\'"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src/02-master-onos && git review -d \'${REVIEW_NO}\' && git log -5\'"'
               }
           }
 
           stage ('Patch-ONOS') {
               steps {
-                sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./patch.sh \"${ONOS_VERSION}\" \'"'
+                sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./patch.sh \"${ONOS_VERSION}\" \'"'
               }
           }
 
           stage ('Build-SONA') {
               steps {
-                sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./build.sh\'"'
+                sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./build.sh\'"'
               }
           }
 
           stage ('Test-SONA') {
               steps {
-                sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./verify.sh\'"'
+                sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./verify.sh\'"'
               }
           }
 
          stage ('Deploy-ONOS') {
              steps {
-                 sh 'ssh centos@${ONOS_IP} "sudo docker pull opensona/onos-sona-nightly-docker:stable || true"'
-                 sh 'ssh centos@${ONOS_IP} "sudo docker stop onos || true"'
-                 sh 'ssh centos@${ONOS_IP} "sudo docker rm onos || true"'
-                 sh 'ssh centos@${ONOS_IP} "sudo docker run --rm -itd --network host --name onos opensona/onos-sona-nightly-docker:stable"'
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'git clone -b stable https://github.com/sonaproject/onos-docker-tool.git\'"'
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC1=${ONOS_IP}\" > onos-docker-tool/site/sona/cell\'"'
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./stop.sh\'"'
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./start.sh\'"'
                  retry(10) {
                      sleep 15
                      sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/floatingips/all'
@@ -65,10 +65,10 @@ pipeline {
 
          stage ('Deploy-SONA') {
              steps {
-               sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknode.oar\'"'
-               sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
-               sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
-               sh 'ssh centos@${ONOS_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworkingui.oar\'"'
+               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknode.oar\'"'
+               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
+               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
+               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworkingui.oar\'"'
              }
          }
          stage ('Prepare-Tempest') {
@@ -98,8 +98,8 @@ pipeline {
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/sync/rules'
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/securityGroup/enable'
 
-               sh 'ssh centos@${ONOS_IP} "sudo docker stop onos-build || true"'
-               sh 'ssh centos@${ONOS_IP} "sudo docker rm onos-build || true"'
+               sh 'ssh centos@${BUILD_IP} "sudo docker stop onos-build || true"'
+               sh 'ssh centos@${BUILD_IP} "sudo docker rm onos-build || true"'
              }
          }
 
@@ -167,7 +167,7 @@ pipeline {
              sh 'ssh centos@${TEMPEST_IP} "sudo docker stop router"'
              sh 'ssh centos@${TEMPEST_IP} "sudo rm -rf /home/centos/tempest-sona-conf"'
              sh 'ssh centos@${TEMPEST_IP} "sudo rm -rf /var/lib/rally_container"'
-             sh 'ssh centos@${ONOS_IP} "sudo docker stop onos"'
+             sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./stop.sh\'"'
              cleanWs()
              notifyBuild(currentBuild.result, params.NOTIFY_BUILD)
          }
