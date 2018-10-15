@@ -167,7 +167,6 @@ pipeline {
              sh 'ssh centos@${TEMPEST_IP} "sudo docker stop router"'
              sh 'ssh centos@${TEMPEST_IP} "sudo rm -rf /home/centos/tempest-sona-conf"'
              sh 'ssh centos@${TEMPEST_IP} "sudo rm -rf /var/lib/rally_container"'
-             sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./stop.sh\'"'
              cleanWs()
              notifyBuild(currentBuild.result, params.NOTIFY_BUILD)
          }
