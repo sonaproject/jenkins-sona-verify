@@ -8,6 +8,9 @@ pipeline {
                   sh 'ssh centos@${BUILD_IP} "sudo docker pull opensona/onos-sona-repo-build || true"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker stop onos-build || true"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker rm onos-build || true"'
+
+                  sleep 10
+
                   sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build -v root_home:/root opensona/onos-sona-repo-build"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p /src/\'"'
 
