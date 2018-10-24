@@ -60,8 +60,14 @@ pipeline {
 
          stage ('Deploy-ONOS') {
              steps {
+               script {
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'git clone -b stable https://github.com/sonaproject/onos-docker-tool.git\'"'
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC1=${ONOS_IP}\" > onos-docker-tool/site/sona/cell\'"'
+
+                 if (env.ONOS2_IP) {
+                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC2=${ONOS2_IP}\" >> onos-docker-tool/site/sona/cell\'"'
+                 }
+                 
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./stop.sh\'"'
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./start.sh\'"'
                  retry(10) {
@@ -69,6 +75,7 @@ pipeline {
                      sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/floatingips/all'
                      sleep 15
                  }
+               }
              }
          }
 
