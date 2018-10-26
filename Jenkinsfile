@@ -129,8 +129,6 @@ pipeline {
              steps {
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/broadcast'
 
-               sleep 30
-
                script {
                  if (env.VERIFY_TARGET != "scenario") {
                    sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --pattern tempest.api.network --skip-list sona-skip-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
@@ -141,6 +139,7 @@ pipeline {
                  }
 
                  if (env.VERIFY_TARGET != "api") {
+                   sleep 30
                    sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --load-list sona-load-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
                    sh 'cat tempest_out.log | grep -c " Failures: 0" || if [ $? -ne 0 ]; then rm -rf tempest_out.log && ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify rerun --failed --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log; fi'
                    sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
@@ -158,8 +157,6 @@ pipeline {
               steps {
                 sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/proxy'
 
-                sleep 30
-
                 script {
                   if (env.VERIFY_TARGET != "scenario") {
                     sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --pattern tempest.api.network --skip-list sona-skip-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
@@ -170,6 +167,7 @@ pipeline {
                   }
 
                   if (env.VERIFY_TARGET != "api") {
+                    sleep 30
                     sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --load-list sona-load-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
                     sh 'cat tempest_out.log | grep -c " Failures: 0" || if [ $? -ne 0 ]; then rm -rf tempest_out.log && ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify rerun --failed --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log; fi'
                     sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
