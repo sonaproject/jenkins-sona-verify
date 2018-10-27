@@ -73,6 +73,9 @@ pipeline {
                  retry(10) {
                      sleep 15
                      sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/floatingips/all'
+                     if (env.ONOS2_IP) {
+                       sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS2_IP}:8181/onos/openstacknetworking/management/floatingips/all'
+                     }
                      sleep 15
                  }
                }
