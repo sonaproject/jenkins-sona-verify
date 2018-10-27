@@ -86,8 +86,6 @@ pipeline {
              steps {
                sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknode.oar\'"'
                sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
-               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
-               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworkingui.oar\'"'
              }
          }
          stage ('Prepare-Tempest') {
@@ -114,9 +112,13 @@ pipeline {
          stage ('Configure-SONA') {
              steps {
                sh 'curl --silent --show-error --fail --user onos:rocks -X POST -H \"Content-Type: application/json\" http://${ONOS_IP}:8181/onos/openstacknode/configure -d @/var/jenkins_home/network-cfg.json'
+               sleep 5
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/sync/states'
+               sleep 5
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/sync/rules'
+               sleep 5
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/securityGroup/enable'
+               sleep 5
 
                sh 'ssh centos@${BUILD_IP} "sudo docker stop onos-build || true"'
                sh 'ssh centos@${BUILD_IP} "sudo docker rm onos-build || true"'
