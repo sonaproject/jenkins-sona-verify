@@ -119,6 +119,7 @@ pipeline {
                sleep 5
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/securityGroup/enable'
                sleep 5
+               sh 'curl --silent --show-error --fail --user onos:rocks -X GET -H \"Accept: application/json\" http://${ONOS_IP}:8181/onos/v1/mastership'
 
                sh 'ssh centos@${BUILD_IP} "sudo docker stop onos-build || true"'
                sh 'ssh centos@${BUILD_IP} "sudo docker rm onos-build || true"'
