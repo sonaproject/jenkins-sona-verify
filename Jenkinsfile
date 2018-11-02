@@ -148,9 +148,6 @@ pipeline {
                    sleep 60
                    sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --load-list sona-load-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
                    sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
-
-                   sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --load-list sona-load-ext-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
-                   sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
                  }
                }
              }
@@ -177,9 +174,6 @@ pipeline {
                   if (env.VERIFY_TARGET != "api") {
                     sleep 60
                     sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --load-list sona-load-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
-                    sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
-
-                    sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --load-list sona-load-ext-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
                     sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
                   }
                 }
