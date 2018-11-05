@@ -42,12 +42,6 @@ pipeline {
 
           stage ('Build-SONA') {
               steps {
-                sh 'ssh centos@${BUILD_IP} "sudo docker stop onos-deps-repo || true"'
-                sleep 10
-                sh 'ssh centos@${BUILD_IP} "sudo docker pull opensona/onos-deps-repo || true"'
-                sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -d -p 8080:80 --name onos-deps-repo opensona/onos-deps-repo"'
-                sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && sed -i \"s/https/http/g\" ./bucklets/node.bucklet\'"'
-                sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && sed -i \"s/nodejs.org/${BUILD_IP}:8080/g\" ./bucklets/node.bucklet\'"'
                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./build.sh\'"'
               }
           }
@@ -61,7 +55,7 @@ pipeline {
          stage ('Deploy-ONOS') {
              steps {
                script {
-                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'git clone -b stable https://github.com/sonaproject/onos-docker-tool.git\'"'
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'git clone -b \"${ONOS_VERSION}\" https://github.com/sonaproject/onos-docker-tool.git\'"'
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC1=${ONOS_IP}\" > onos-docker-tool/site/sona/cell\'"'
 
                  if (env.ONOS2_IP) {
@@ -189,15 +183,7 @@ pipeline {
                   }
               }
               steps {
-                  sh 'test $(cat tempest_out.log | grep -c " Failures: 0") -eq 1 && curl -H "Content-Type: application/json" --data \'{"source_type": "Branch", "source_name": "master"}\' -X POST ${TRIGGER_URL}'
-
-                  sleep 60
-
-                  sh 'test $(cat tempest_out.log | grep -c " Failures: 0") -eq 1 && curl -H "Content-Type: application/json" --data \'{"source_type": "Branch", "source_name": "stable"}\' -X POST ${TRIGGER_URL}'
-
-                  sleep 60
-
-                  sh 'test $(cat tempest_out.log | grep -c " Failures: 0") -eq 1 && curl -H "Content-Type: application/json" --data \'{"source_type": "Branch", "source_name": "dev"}\' -X POST ${TRIGGER_URL}'
+                  sh 'test $(cat tempest_out.log | grep -c " Failures: 0") -eq 1 && curl -H "Content-Type: application/json" --data \'{"source_type": "Branch", "source_name": "\'${ONOS_VERSION}\'"}\' -X POST ${TRIGGER_URL}'
               }
          }
      }
