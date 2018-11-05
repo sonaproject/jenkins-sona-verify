@@ -55,7 +55,7 @@ pipeline {
          stage ('Deploy-ONOS') {
              steps {
                script {
-                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'git clone -b \"${ONOS_VERSION}\" https://github.com/sonaproject/onos-docker-tool.git\'"'
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'git clone -b master https://github.com/sonaproject/onos-docker-tool.git\'"'
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC1=${ONOS_IP}\" > onos-docker-tool/site/sona/cell\'"'
 
                  if (env.ONOS2_IP) {
@@ -63,6 +63,16 @@ pipeline {
                  }
 
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./stop.sh\'"'
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'rm -rf onos-docker-tool\'"'
+
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'git clone -b \"${ONOS_VERSION}\" https://github.com/sonaproject/onos-docker-tool.git\'"'
+
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC1=${ONOS_IP}\" > onos-docker-tool/site/sona/cell\'"'
+
+                 if (env.ONOS2_IP) {
+                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC2=${ONOS2_IP}\" >> onos-docker-tool/site/sona/cell\'"'
+                 }
+
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./start.sh\'"'
                  retry(10) {
                      sleep 15
@@ -174,6 +184,12 @@ pipeline {
                   }
                 }
               }
+         }
+
+         stage ('Clean-Up') {
+           steps {
+             sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./stop.sh\'"'
+           }
          }
 
          stage ('Deliver-ONOS-SONA') {
