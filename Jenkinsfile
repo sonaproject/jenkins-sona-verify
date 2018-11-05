@@ -186,12 +186,6 @@ pipeline {
               }
          }
 
-         stage ('Clean-Up') {
-           steps {
-             sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./stop.sh\'"'
-           }
-         }
-
          stage ('Deliver-ONOS-SONA') {
              when {
                   expression {
