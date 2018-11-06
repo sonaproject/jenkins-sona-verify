@@ -74,7 +74,7 @@ pipeline {
                  }
 
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./start.sh\'"'
-                 retry(10) {
+                 retry(20) {
                      sleep 15
                      sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/floatingips/all'
                      if (env.ONOS2_IP) {
