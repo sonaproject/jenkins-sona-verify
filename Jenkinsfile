@@ -66,6 +66,10 @@ pipeline {
                    sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC2=${ONOS2_IP}\" >> onos-docker-tool/site/sona/cell\'"'
                  }
 
+                 if (env.ONOS3_IP) {
+                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC3=${ONOS3_IP}\" >> onos-docker-tool/site/sona/cell\'"'
+                 }
+
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./stop.sh\'"'
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'rm -rf onos-docker-tool\'"'
 
@@ -77,12 +81,19 @@ pipeline {
                    sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC2=${ONOS2_IP}\" >> onos-docker-tool/site/sona/cell\'"'
                  }
 
+                 if (env.ONOS3_IP) {
+                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC3=${ONOS3_IP}\" >> onos-docker-tool/site/sona/cell\'"'
+                 }
+
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./start.sh\'"'
                  retry(20) {
                      sleep 15
                      sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/floatingips/all'
                      if (env.ONOS2_IP) {
                        sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS2_IP}:8181/onos/openstacknetworking/management/floatingips/all'
+                     }
+                     if (env.ONOS3_IP) {
+                       sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS3_IP}:8181/onos/openstacknetworking/management/floatingips/all'
                      }
                      sleep 15
                  }
