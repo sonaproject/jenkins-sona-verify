@@ -36,7 +36,11 @@ pipeline {
 
           stage ('Patch-ONOS') {
               steps {
-                sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./patch.sh \"${ONOS_VERSION}\" \'"'
+                script {
+                  if (env.ONOS_VERSION != "dev") {
+                    sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && cd /src && ./patch.sh \"${ONOS_VERSION}\" \'"'
+                  }
+                }
               }
           }
 
