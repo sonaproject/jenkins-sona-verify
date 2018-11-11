@@ -3,6 +3,7 @@ pipeline {
      stages {
          stage ('Fetch-SONA') {
           steps {
+            script {
                   notifyBuild('STARTED', params.NOTIFY_BUILD)
                   cleanWs()
                   sh 'ssh centos@${BUILD_IP} "sudo docker pull opensona/onos-sona-repo-build:${ONOS_VERSION} || true"'
@@ -11,7 +12,12 @@ pipeline {
 
                   sleep 10
 
-                  sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build -v root_home:/root opensona/onos-sona-repo-build:${ONOS_VERSION}"'
+                  if (env.ONOS_VERSION != "master") {
+                    sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build -v root_home:/root opensona/onos-sona-repo-build:${ONOS_VERSION}"'
+                  } else {
+                    sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build -v root_home:/root opensona/onos-sona-repo-build"'
+                  }
+
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p /src/\'"'
 
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git -b \"${ONOS_VERSION}\"\'"'
@@ -19,6 +25,7 @@ pipeline {
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'echo \"export ONOS_ROOT=/src\" > ~/.bash_profile\'"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'. ~/.bash_profile\'"'
               }
+            }
           }
 
           stage ('Pull-Review-Repo') {
