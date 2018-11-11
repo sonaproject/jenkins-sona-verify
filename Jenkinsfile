@@ -5,13 +5,13 @@ pipeline {
           steps {
                   notifyBuild('STARTED', params.NOTIFY_BUILD)
                   cleanWs()
-                  sh 'ssh centos@${BUILD_IP} "sudo docker pull opensona/onos-sona-repo-build || true"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker pull opensona/onos-sona-repo-build:${ONOS_VERSION} || true"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker stop onos-build || true"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker rm onos-build || true"'
 
                   sleep 10
 
-                  sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build -v root_home:/root opensona/onos-sona-repo-build"'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build -v root_home:/root opensona/onos-sona-repo-build:${ONOS_VERSION}"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p /src/\'"'
 
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git -b \"${ONOS_VERSION}\"\'"'
