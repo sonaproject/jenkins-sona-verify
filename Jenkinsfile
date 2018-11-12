@@ -6,7 +6,13 @@ pipeline {
             script {
                   notifyBuild('STARTED', params.NOTIFY_BUILD)
                   cleanWs()
-                  sh 'ssh centos@${BUILD_IP} "sudo docker pull opensona/onos-sona-repo-build:${ONOS_VERSION} || true"'
+
+                  if (env.ONOS_VERSION != "master") {
+                    sh 'ssh centos@${BUILD_IP} "sudo docker pull opensona/onos-sona-repo-build:${ONOS_VERSION} || true"'
+                  } else {
+                    sh 'ssh centos@${BUILD_IP} "sudo docker pull opensona/onos-sona-repo-build || true"'
+                  }
+
                   sh 'ssh centos@${BUILD_IP} "sudo docker stop onos-build || true"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker rm onos-build || true"'
 
