@@ -115,6 +115,8 @@ pipeline {
                      }
                      sleep 15
                  }
+
+                 sleep 30
                }
              }
          }
