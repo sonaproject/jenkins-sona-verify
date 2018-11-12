@@ -13,10 +13,12 @@ pipeline {
                   sleep 10
 
                   if (env.ONOS_VERSION != "master") {
-                    sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build -v root_home:/root opensona/onos-sona-repo-build:${ONOS_VERSION}"'
+                    sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build opensona/onos-sona-repo-build:${ONOS_VERSION}"'
                   } else {
-                    sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build -v root_home:/root opensona/onos-sona-repo-build"'
+                    sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build opensona/onos-sona-repo-build"'
                   }
+
+                  sh 'ssh centos@${BUILD_IP} "sudo docker cp /var/lib/docker/volumes/root_home/_data/.ssh onos-build:/root"'
 
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p /src/\'"'
 
