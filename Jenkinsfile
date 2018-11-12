@@ -20,7 +20,8 @@ pipeline {
 
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p /src/\'"'
 
-                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git -b \"${ONOS_VERSION}\"\'"'
+                  sh 'git config --global color.ui false'
+                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo init -u https://github.com/sonaproject/onos-sona-repo.git -b \"${ONOS_VERSION}\" --no-repo-verify\'"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd /src && repo sync\'"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'echo \"export ONOS_ROOT=/src\" > ~/.bash_profile\'"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'. ~/.bash_profile\'"'
