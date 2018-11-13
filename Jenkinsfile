@@ -125,14 +125,13 @@ pipeline {
          stage ('Deploy-SONA') {
              steps {
                script {
-                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknode.oar\' || true"'
-                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\' || true"'
-
-                 if (env.ONOS_VERSION == "incubate") {
-                   sleep 60
-                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknode.oar\'"'
-                   sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
-                 }
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} uninstall org.onosproject.openstacknetworking\'"'
+                 sleep 5
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} uninstall org.onosproject.openstacknode\'"'
+                 sleep 5
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} install! /src/sona-out/openstacknode.oar\'"'
+                 sleep 5
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} install! /src/sona-out/openstacknetworking.oar\'"'
                }
              }
          }
