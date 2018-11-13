@@ -101,7 +101,7 @@ pipeline {
                    sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'mkdir -p onos-docker-tool/site/sona && echo \"export ODC3=${ONOS3_IP}\" >> onos-docker-tool/site/sona/cell\'"'
                  }
 
-                 sleep 30
+                 sleep 120
 
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./start.sh\'"'
                  retry(20) {
