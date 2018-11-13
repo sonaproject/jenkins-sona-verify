@@ -104,8 +104,8 @@ pipeline {
                  sleep 30
 
                  sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'cd onos-docker-tool && source bash_profile && onos-docker-site sona && ./start.sh\'"'
-		
-		 sleep 120
+
+                 sleep 120
 
                  retry(20) {
                      sleep 15
@@ -118,18 +118,20 @@ pipeline {
                      }
                      sleep 15
                  }
-
-                 if (env.ONOS_VERSION == "incubate") {
-                   sleep 60
-                 }
                }
              }
          }
 
          stage ('Deploy-SONA') {
              steps {
-               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknode.oar\'"'
-               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
+               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknode.oar\' || true"'
+               sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\' || true"'
+
+               if (env.ONOS_VERSION == "incubate") {
+                 sleep 60
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknode.oar\'"'
+                 sh 'ssh centos@${BUILD_IP} "sudo docker exec -i onos-build /bin/bash -c \'export ONOS_ROOT=/src && /src/tools/package/runtime/bin/onos-app ${ONOS_IP} reinstall! /src/sona-out/openstacknetworking.oar\'"'
+               }
              }
          }
          stage ('Prepare-Tempest') {
