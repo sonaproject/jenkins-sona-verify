@@ -198,7 +198,7 @@ pipeline {
              }
          }
 
-         stage ('Verify-Broadcast-Stateless-SNAT-Mode') {
+         stage ('Verify-Broadcast-Stateful-SNAT-Mode') {
              when {
                  expression {
                      return params.ARP_MODE != "proxy"
