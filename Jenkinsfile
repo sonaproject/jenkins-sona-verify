@@ -175,11 +175,6 @@ pipeline {
                      return params.ARP_MODE != "proxy"
                  }
              }
-             when {
-                 expression {
-                     return params.STATEFUL_SNAT != "enable"
-                 }
-             }
              steps {
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/broadcast'
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/statefulSnat/disable'
@@ -203,15 +198,10 @@ pipeline {
              }
          }
 
-         stage ('Verify-Broadcast-Stateful-SNAT-Mode') {
+         stage ('Verify-Broadcast-Stateless-SNAT-Mode') {
              when {
                  expression {
                      return params.ARP_MODE != "proxy"
-                 }
-             }
-             when {
-                 expression {
-                     return params.STATEFUL_SNAT != "disable"
                  }
              }
              steps {
@@ -243,13 +233,9 @@ pipeline {
                       return params.ARP_MODE != "broadcast"
                  }
               }
-              when {
-                  expression {
-                      return params.STATEFUL_SNAT != "disable"
-                  }
-              }
               steps {
                 sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/proxy'
+                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/statefulSnat/enable'
 
                 script {
                   if (env.VERIFY_TARGET != "scenario") {
