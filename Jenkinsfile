@@ -169,14 +169,20 @@ pipeline {
              }
          }
 
-         stage ('Verify-Broadcast-Mode') {
+         stage ('Verify-Broadcast-Stateless-SNAT-Mode') {
              when {
                  expression {
                      return params.ARP_MODE != "proxy"
                  }
              }
+             when {
+                 expression {
+                     return params.STATEFUL_SNAT != "enable"
+                 }
+             }
              steps {
                sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/broadcast'
+               sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/statefulSnat/disable'
 
                script {
                  if (env.VERIFY_TARGET != "scenario") {
@@ -197,11 +203,50 @@ pipeline {
              }
          }
 
-         stage ('Verify-Proxy-Mode') {
+         stage ('Verify-Broadcast-Stateful-SNAT-Mode') {
+             when {
+                 expression {
+                     return params.ARP_MODE != "proxy"
+                 }
+             }
+             when {
+                 expression {
+                     return params.STATEFUL_SNAT != "disable"
+                 }
+             }
+             steps {
+               sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/broadcast'
+               sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/statefulSnat/enable'
+
+               script {
+                 if (env.VERIFY_TARGET != "scenario") {
+                   sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --pattern tempest.api.network --skip-list sona-skip-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
+                   sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
+
+                   sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --pattern neutron_tempest_plugin.api --skip-list sona-skip-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
+                   sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
+                 }
+
+                 if (env.VERIFY_TARGET != "api") {
+                   sleep 60
+                   sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify start --load-list sona-load-list.yaml --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log'
+                   sh 'cat tempest_out.log | grep -c " Failures: 0" || if [ $? -ne 0 ]; then rm -rf tempest_out.log && ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify rerun --failed --detail --concurrency ${CONCURRENCY}\'" | tee tempest_out.log; fi'
+                   sh 'cat tempest_out.log | grep -c " Failures: 0" || (EC=$?; exit $EC)'
+                 }
+               }
+             }
+         }
+
+         stage ('Verify-Proxy-Stateful-SNAT-Mode') {
               when {
                  expression {
                       return params.ARP_MODE != "broadcast"
                  }
+              }
+              when {
+                  expression {
+                      return params.STATEFUL_SNAT != "disable"
+                  }
               }
               steps {
                 sh 'curl --silent --show-error --fail --user onos:rocks -X GET http://${ONOS_IP}:8181/onos/openstacknetworking/management/config/arpmode/proxy'
