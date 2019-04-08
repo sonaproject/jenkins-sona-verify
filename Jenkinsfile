@@ -297,9 +297,12 @@ def notifyBuild(String buildStatus = 'STARTED', Boolean sendFlag = false) {
         if (buildStatus == 'STARTED') {
             color = 'YELLOW'
             colorCode = '#FFFF00'
-        } else if (buildStatus == 'SUCCESSFUL') {
+        } else if (buildStatus == 'SUCCESS') {
             color = 'GREEN'
             colorCode = '#00FF00'
+        } else if (buildStatus == 'ABORTED') {
+            color = 'ORANGE'
+            colorCode = '#FFA500'
         } else {
             color = 'RED'
             colorCode = '#FF0000'
