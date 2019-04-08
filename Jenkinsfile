@@ -286,8 +286,8 @@ def notifyBuild(String buildStatus = 'STARTED', Boolean sendFlag = false) {
         buildStatus =  buildStatus ?: 'SUCCESS'
 
         // Default values
-        def colorName = 'RED'
-        def colorCode = '#FF0000'
+        def colorName = 'BLACK'
+        def colorCode = '#000000'
         def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
         def summary = "${subject} (${env.BUILD_URL})"
         def details = """<p>STARTED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
@@ -303,9 +303,12 @@ def notifyBuild(String buildStatus = 'STARTED', Boolean sendFlag = false) {
         } else if (buildStatus == 'ABORTED') {
             color = 'ORANGE'
             colorCode = '#FFA500'
-        } else {
+        } else if (buildStatus == 'FAILURE') {
             color = 'RED'
             colorCode = '#FF0000'
+        } else {
+            color = 'BLACK'
+            colorCode = '#000000'
         }
 
         // Send notifications
