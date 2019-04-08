@@ -283,7 +283,7 @@ def notifyBuild(String buildStatus = 'STARTED', Boolean sendFlag = false) {
 
     if (sendFlag == true) {
         // build status of null means successful
-        buildStatus =  buildStatus ?: 'SUCCESSFUL'
+        buildStatus =  buildStatus ?: 'SUCCESS'
 
         // Default values
         def colorName = 'RED'
