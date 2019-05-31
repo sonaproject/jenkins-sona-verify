@@ -148,7 +148,7 @@ pipeline {
                sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally deployment create --fromenv --name sona-test\'"'
                sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify create-verifier --type tempest --name tempest-verifier --source https://github.com/sonaproject/tempest.git --version ${OPENSTACK_VERSION}\'"'
                sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify configure-verifier --extend sona-tempest.conf\'"'
-               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify add-verifier-ext --source https://github.com/openstack/neutron-tempest-plugin.git\'"'
+               sh 'ssh centos@${TEMPEST_IP} "sudo docker exec -i router /bin/bash -c \'source admin-openrc.sh && OS_AUTH_URL=${KEYSTONE_EP} && rally verify add-verifier-ext --source https://github.com/sonaproject/neutron-tempest-plugin.git\'"'
            }
          }
 
