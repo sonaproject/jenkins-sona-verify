@@ -16,7 +16,7 @@ pipeline {
                   sh 'ssh centos@${BUILD_IP} "sudo docker stop onos-build || true"'
                   sh 'ssh centos@${BUILD_IP} "sudo docker rm onos-build || true"'
 
-                  sleep 20
+                  sleep 60
 
                   if (env.ONOS_VERSION != "master") {
                     sh 'ssh centos@${BUILD_IP} "sudo docker run --rm -itd --name onos-build opensona/onos-sona-repo-build:${ONOS_VERSION}"'
